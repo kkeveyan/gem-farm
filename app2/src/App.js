@@ -1,6 +1,7 @@
 import './App.css';
 import { getNFTsByOwner, getNFTMetadataForMany } from './common/getNfts';
-import { set } from '@project-serum/anchor/dist/cjs/utils/features';
+import { fetchFarn, fetchFarmer, stakerMover, endStaking } from './common/staker';
+
 import { useState } from 'react';
 import { Connection, PublicKey } from '@solana/web3.js';
 import { Program, Provider, web3 } from '@project-serum/anchor';
@@ -10,7 +11,8 @@ import { PhantomWalletAdapter } from '@solana/wallet-adapter-wallets';
 import { useWallet, WalletProvider, ConnectionProvider } from '@solana/wallet-adapter-react';
 import { WalletModalProvider, WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 require('@solana/wallet-adapter-react-ui/styles.css');
-import { depositNftsOnChain, freshStart } from './common/staker'
+
+
 
 
 const wallets = [
@@ -18,9 +20,7 @@ const wallets = [
   new PhantomWalletAdapter(),
 ]
 
-const { SystemProgram, Keypair } = web3;
-/* create an account  */
-const baseAccount = Keypair.generate();
+
 const opts = {
   preflightCommitment: "processed"
 }
@@ -28,6 +28,7 @@ const programID = new PublicKey(env.farm_id);
 
 function App() {
   const [value, setValue] = useState(null);
+  const [farmerState, setFarmerState] = useState(null)
   const wallet = useWallet();
 
   async function getProvider() {
@@ -58,18 +59,33 @@ function App() {
   }
 
   async function getStakedNfts() {
-    console.log("viewing staked nfts")
-    const provider = await getProvider()
+    // console.log("viewing staked nfts")
+    // console.log(wallet.publicKey.toBase58())
     const network = "https://api.devnet.solana.com";
     const connection = new Connection(network, opts.preflightCommitment);
-    const providerPublicKey = new PublicKey(provider.wallet.publicKey)
-    const started = await freshStart(wallet, connection)
-    console.log(started)
+
+    const farmStarted = await fetchFarn(connection, wallet)
+    // console.log("started: ", farmStarted)
+    const farmerStarted = await fetchFarmer(connection, wallet)
+    // console.log("started: ", farmerStarted)
+    setFarmerState(farmerStarted.farmerState)
   }
 
   async function stakeNft(nft) {
+    const network = "https://api.devnet.solana.com";
+    const connection = new Connection(network, opts.preflightCommitment);
     console.log("staking nft", nft.onchainMetadata.mint)
-    const txn = await depositNftsOnChain(nft)
+    const stakeResult = await stakerMover(nft, connection, wallet)
+    console.log(stakeResult)
+    const farmerStarted = await fetchFarmer(connection, wallet)
+    setFarmerState(farmerStarted.farmerState)
+  }
+
+  async function stopStake() {
+    const network = "https://api.devnet.solana.com";
+    const connection = new Connection(network, opts.preflightCommitment);
+    const endStakeResults = await endStaking(connection, wallet)
+    console.log(endStakeResults)
   }
 
   if (!wallet.connected) {
@@ -92,11 +108,11 @@ function App() {
           {
             value ? (
               <>
-                <h2>Your NFTs</h2>
+                <h2>Your Unstaked NFTs</h2>
                 <div className="m-1 card flex justify-center">
                   <ul>
                     {value.map((value, index) => {
-                      if (value.onchainMetadata.data.creators[0].address == env.creator_id) {
+                      if (value.onchainMetadata.data.creators[0].address == env.creator_id || value.onchainMetadata.data.creators[0].address == env.creator_id2 || value.onchainMetadata.data.creators[0].address == env.creator_id3) {
                         return <p>
                           <img
                             src={value.externalMetadata.image}
@@ -111,9 +127,25 @@ function App() {
                     })}
                   </ul>
                 </div>
+                <button onClick={getStakedNfts}>Get Staked</button><button onClick={getUnstakedNfts}>Get Unstaked</button>
               </>
             ) : (
-              <h3>Retrieve Your Unstaked NFTs</h3>
+              <h3>Nothing to display</h3>
+            )
+          }
+          {
+            farmerState == "staked" ? (
+              <>
+                {console.log("state: ", farmerState)}
+                <h2>Your Staked NFTs</h2>
+                <button onClick={stopStake}>Stop Staking</button>
+              </>
+            ) : (
+              <>
+                <h2>No staked NFTs</h2>
+                {console.log("state: ", farmerState)}
+              </>
+
             )
           }
         </div>

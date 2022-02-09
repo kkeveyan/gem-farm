@@ -5,12 +5,14 @@
     "update": "cd ./app/gem-bank && yarn update && cd ../gem-farm && yarn update"
   },
   "dependencies": {
+    "@gemworks/gem-farm-ts": "^0.1.4",
     "@metaplex-foundation/mpl-token-metadata": "^0.0.2",
     "@metaplex/js": "^4.9.0",
     "@project-serum/anchor": "^0.18.2",
     "@solana/spl-token": "^0.1.8",
     "@solana/wallet-adapter-base": "^0.8.1",
-    "@solana/web3.js": "^1.31.0"
+    "@solana/web3.js": "^1.31.0",
+    "path-browserify": "^1.0.1"
   },
   "devDependencies": {
     "@types/chai": "^4.2.22",

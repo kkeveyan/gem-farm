@@ -2,7 +2,7 @@ import { BN, Idl } from '@project-serum/anchor';
 import { GemBankClient, WhitelistType } from '@gemworks/gem-farm-ts';
 import { Connection, Keypair, PublicKey } from '@solana/web3.js';
 import { SignerWalletAdapter } from '@solana/wallet-adapter-base';
-import { DEFAULTS } from '@/globals';
+
 import { NodeWallet, programs } from '@metaplex/js';
 
 //when we only want to view vaults, no need to connect a real wallet.
@@ -20,17 +20,17 @@ export function createFakeWallet() {
 
 //need a separate func coz fetching IDL is async and can't be done in constructor
 export async function initGemBank(
-    conn: Connection,
-    wallet?: SignerWalletAdapter
+    conn,
+    wallet
 ) {
     const walletToUse = wallet ?? createFakeWallet();
     const idl = await (await fetch('gem_bank.json')).json();
-    return new GemBank(conn, walletToUse as any, idl);
+    return new GemBank(conn, walletToUse, idl);
 }
 
 export class GemBank extends GemBankClient {
-    constructor(conn: Connection, wallet: any, idl: Idl) {
-        const programId = DEFAULTS.GEM_BANK_PROG_ID;
+    constructor(conn, wallet, idl) {
+        const programId = "bankHHdqMuaaST4qQk6mkzxGeKPHWmqdgor6Gs8r88m";
         super(conn, wallet, idl, programId);
     }
 
@@ -44,7 +44,7 @@ export class GemBank extends GemBankClient {
         return { bank, txSig };
     }
 
-    async initVaultWallet(bank: PublicKey) {
+    async initVaultWallet(bank) {
         return this.initVault(
             bank,
             this.wallet.publicKey,
@@ -55,20 +55,20 @@ export class GemBank extends GemBankClient {
     }
 
     async setVaultLockWallet(
-        bank: PublicKey,
-        vault: PublicKey,
-        vaultLocked: boolean
+        bank,
+        vault,
+        vaultLocked
     ) {
         return this.setVaultLock(bank, vault, this.wallet.publicKey, vaultLocked);
     }
 
     async depositGemWallet(
-        bank: PublicKey,
-        vault: PublicKey,
-        gemAmount: BN,
-        gemMint: PublicKey,
-        gemSource: PublicKey,
-        creator: PublicKey
+        bank,
+        vault,
+        gemAmount,
+        gemMint,
+        gemSource,
+        creator
     ) {
         const [mintProof, bump] = await this.findWhitelistProofPDA(bank, gemMint);
         const [creatorProof, bump2] = await this.findWhitelistProofPDA(
@@ -91,10 +91,10 @@ export class GemBank extends GemBankClient {
     }
 
     async withdrawGemWallet(
-        bank: PublicKey,
-        vault: PublicKey,
-        gemAmount: BN,
-        gemMint: PublicKey
+        bank,
+        vault,
+        gemAmount,
+        gemMint
     ) {
         return this.withdrawGem(
             bank,
@@ -107,9 +107,9 @@ export class GemBank extends GemBankClient {
     }
 
     async addToWhitelistWallet(
-        bank: PublicKey,
-        addressToWhitelist: PublicKey,
-        whitelistType: WhitelistType
+        bank,
+        addressToWhitelist,
+        whitelistType,
     ) {
         return this.addToWhitelist(
             bank,
@@ -119,7 +119,7 @@ export class GemBank extends GemBankClient {
         );
     }
 
-    async removeFromWhitelistWallet(bank: PublicKey, addressToRemove: PublicKey) {
+    async removeFromWhitelistWallet(bank, addressToRemove) {
         return this.removeFromWhitelist(
             bank,
             this.wallet.publicKey,

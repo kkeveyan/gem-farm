@@ -1,40 +1,38 @@
 import { Connection, Keypair, PublicKey } from '@solana/web3.js';
 import { SignerWalletAdapter } from '@solana/wallet-adapter-base';
 import { BN, Idl } from '@project-serum/anchor';
-import { DEFAULTS } from '@/globals';
-import { createFakeWallet } from './gemBank'
-import {
-  GemFarmClient,
-  FarmConfig,
-  VariableRateConfig,
-  FixedRateConfig,
-  WhitelistType,
-} from '@gemworks/gem-farm-ts';
-import { programs } from '@metaplex/js';
 
+import { createFakeWallet } from './gemBank'
+import { GemFarmClient } from '@gemworks/gem-farm-ts';
+import { programs } from '@metaplex/js';
+const gem_farm = require('./gem_farm.json')
+const gem_bank = require('./gem_bank.json')
 export async function initGemFarm(
-  conn: Connection,
-  wallet?: SignerWalletAdapter
+  conn,
+  wallet
 ) {
   const walletToUse = wallet ?? createFakeWallet();
-  const farmIdl = await (await fetch('gem_farm.json')).json();
-  const bankIdl = await (await fetch('gem_bank.json')).json();
-  return new GemFarm(conn, walletToUse as any, farmIdl, bankIdl);
+  // console.log("using wallet for gemfarm init: ", walletToUse.publicKey.toBase58())
+  const farmIdl = gem_farm;
+  // console.log("farmIdl done :", farmIdl)
+  const bankIdl = gem_bank;
+  // console.log("bankIdl done: ", bankIdl)
+  return new GemFarm(conn, walletToUse, farmIdl, bankIdl);
 }
 
 export class GemFarm extends GemFarmClient {
-  constructor(conn: Connection, wallet: any, farmIdl: Idl, bankIdl: Idl) {
-    const farmProgId = DEFAULTS.GEM_FARM_PROG_ID;
-    const bankProgId = DEFAULTS.GEM_BANK_PROG_ID;
+  constructor(conn, wallet, farmIdl, bankIdl) {
+    const farmProgId = "farmL4xeBFVXJqtfxCzU9b28QACM7E2W2ctT6epAjvE";
+    const bankProgId = "bankHHdqMuaaST4qQk6mkzxGeKPHWmqdgor6Gs8r88m";
     super(conn, wallet, farmIdl, farmProgId, bankIdl, bankProgId);
   }
 
   async initFarmWallet(
-    rewardAMint: PublicKey,
-    rewardAType: any,
-    rewardBMint: PublicKey,
-    rewardBType: any,
-    farmConfig: FarmConfig
+    rewardAMint,
+    rewardAType,
+    rewardBMint,
+    rewardBType,
+    farmConfig
   ) {
     const farm = Keypair.generate();
     const bank = Keypair.generate();
@@ -58,9 +56,9 @@ export class GemFarm extends GemFarmClient {
   }
 
   async updateFarmWallet(
-    farm: PublicKey,
-    newConfig?: FarmConfig,
-    newManager?: PublicKey
+    farm,
+    newConfig,
+    newManager
   ) {
     const result = await this.updateFarm(
       farm,
@@ -74,7 +72,7 @@ export class GemFarm extends GemFarmClient {
     return result;
   }
 
-  async authorizeFunderWallet(farm: PublicKey, funder: PublicKey) {
+  async authorizeFunderWallet(farm, funder) {
     const result = await this.authorizeFunder(
       farm,
       this.wallet.publicKey,
@@ -86,7 +84,7 @@ export class GemFarm extends GemFarmClient {
     return result;
   }
 
-  async deauthorizeFunderWallet(farm: PublicKey, funder: PublicKey) {
+  async deauthorizeFunderWallet(farm, funder) {
     const result = await this.deauthorizeFunder(
       farm,
       this.wallet.publicKey,
@@ -99,14 +97,14 @@ export class GemFarm extends GemFarmClient {
   }
 
   async fundVariableRewardWallet(
-    farm: PublicKey,
-    rewardMint: PublicKey,
-    amount: string,
-    duration: string
+    farm,
+    rewardMint,
+    amount,
+    duration
   ) {
     const rewardSource = await this.findATA(rewardMint, this.wallet.publicKey);
 
-    const config: VariableRateConfig = {
+    const config = {
       amount: new BN(amount),
       durationSec: new BN(duration),
     };
@@ -125,40 +123,40 @@ export class GemFarm extends GemFarmClient {
   }
 
   async fundFixedRewardWallet(
-    farm: PublicKey,
-    rewardMint: PublicKey,
-    amount: string,
-    duration: string,
-    baseRate: string,
-    denominator: string,
-    t1RewardRate?: string,
-    t1RequiredTenure?: string,
-    t2RewardRate?: string,
-    t2RequiredTenure?: string,
-    t3RewardRate?: string,
-    t3RequiredTenure?: string
+    farm,
+    rewardMint,
+    amount,
+    duration,
+    baseRate,
+    denominator,
+    t1RewardRate,
+    t1RequiredTenure,
+    t2RewardRate,
+    t2RequiredTenure,
+    t3RewardRate,
+    t3RequiredTenure,
   ) {
     const rewardSource = await this.findATA(rewardMint, this.wallet.publicKey);
 
-    const config: FixedRateConfig = {
+    const config = {
       schedule: {
         baseRate: new BN(baseRate),
         tier1: t1RewardRate
           ? {
             rewardRate: new BN(t1RewardRate),
-            requiredTenure: new BN(t1RequiredTenure!),
+            requiredTenure: new BN(t1RequiredTenure),
           }
           : null,
         tier2: t2RewardRate
           ? {
             rewardRate: new BN(t2RewardRate),
-            requiredTenure: new BN(t2RequiredTenure!),
+            requiredTenure: new BN(t2RequiredTenure),
           }
           : null,
         tier3: t3RewardRate
           ? {
             rewardRate: new BN(t3RewardRate),
-            requiredTenure: new BN(t3RequiredTenure!),
+            requiredTenure: new BN(t3RequiredTenure),
           }
           : null,
         denominator: new BN(denominator),
@@ -181,7 +179,7 @@ export class GemFarm extends GemFarmClient {
     return result;
   }
 
-  async cancelRewardWallet(farm: PublicKey, rewardMint: PublicKey) {
+  async cancelRewardWallet(farm, rewardMint) {
     const result = await this.cancelReward(
       farm,
       this.wallet.publicKey,
@@ -194,7 +192,7 @@ export class GemFarm extends GemFarmClient {
     return result;
   }
 
-  async lockRewardWallet(farm: PublicKey, rewardMint: PublicKey) {
+  async lockRewardWallet(farm, rewardMint) {
     const result = await this.lockReward(
       farm,
       this.wallet.publicKey,
@@ -206,7 +204,7 @@ export class GemFarm extends GemFarmClient {
     return result;
   }
 
-  async refreshFarmerWallet(farm: PublicKey, farmerIdentity: PublicKey) {
+  async refreshFarmerWallet(farm, farmerIdentity) {
     const result = await this.refreshFarmer(farm, farmerIdentity);
 
     console.log('refreshed farmer', farmerIdentity.toBase58());
@@ -215,9 +213,9 @@ export class GemFarm extends GemFarmClient {
   }
 
   async treasuryPayoutWallet(
-    farm: PublicKey,
-    destination: PublicKey,
-    lamports: string
+    farm,
+    destination,
+    lamports
   ) {
     const result = await this.payoutFromTreasury(
       farm,
@@ -231,7 +229,7 @@ export class GemFarm extends GemFarmClient {
     return result;
   }
 
-  async initFarmerWallet(farm: PublicKey) {
+  async initFarmerWallet(farm) {
     const result = await this.initFarmer(
       farm,
       this.wallet.publicKey,
@@ -243,7 +241,7 @@ export class GemFarm extends GemFarmClient {
     return result;
   }
 
-  async stakeWallet(farm: PublicKey) {
+  async stakeWallet(farm) {
     const result = await this.stake(farm, this.wallet.publicKey);
 
     console.log('begun staking for farmer', this.wallet.publicKey.toBase58());
@@ -251,7 +249,7 @@ export class GemFarm extends GemFarmClient {
     return result;
   }
 
-  async unstakeWallet(farm: PublicKey) {
+  async unstakeWallet(farm) {
     const result = await this.unstake(farm, this.wallet.publicKey);
 
     console.log('ended staking for farmer', this.wallet.publicKey.toBase58());
@@ -260,9 +258,9 @@ export class GemFarm extends GemFarmClient {
   }
 
   async claimWallet(
-    farm: PublicKey,
-    rewardAMint: PublicKey,
-    rewardBMint: PublicKey
+    farm,
+    rewardAMint,
+    rewardBMint
   ) {
     const result = await this.claim(
       farm,
@@ -277,11 +275,11 @@ export class GemFarm extends GemFarmClient {
   }
 
   async flashDepositWallet(
-    farm: PublicKey,
-    gemAmount: string,
-    gemMint: PublicKey,
-    gemSource: PublicKey,
-    creator: PublicKey
+    farm,
+    gemAmount,
+    gemMint,
+    gemSource,
+    creator
   ) {
     const farmAcc = await this.fetchFarmAcc(farm);
     const bank = farmAcc.bank;
@@ -310,9 +308,9 @@ export class GemFarm extends GemFarmClient {
   }
 
   async addToBankWhitelistWallet(
-    farm: PublicKey,
-    addressToWhitelist: PublicKey,
-    whitelistType: WhitelistType
+    farm,
+    addressToWhitelist,
+    whitelistType
   ) {
     const result = await this.addToBankWhitelist(
       farm,
@@ -327,8 +325,8 @@ export class GemFarm extends GemFarmClient {
   }
 
   async removeFromBankWhitelistWallet(
-    farm: PublicKey,
-    addressToRemove: PublicKey
+    farm,
+    addressToRemove
   ) {
     const result = await this.removeFromBankWhitelist(
       farm,
