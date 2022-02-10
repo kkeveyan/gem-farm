@@ -1,10 +1,12 @@
+
 import { BN, Idl } from '@project-serum/anchor';
 import { GemBankClient, WhitelistType } from '@gemworks/gem-farm-ts';
 import { Connection, Keypair, PublicKey } from '@solana/web3.js';
 import { SignerWalletAdapter } from '@solana/wallet-adapter-base';
 
 import { NodeWallet, programs } from '@metaplex/js';
-
+const gem_farm = require('./gem_farm.json')
+const gem_bank = require('./gem_bank.json')
 //when we only want to view vaults, no need to connect a real wallet.
 export function createFakeWallet() {
     const leakedKp = Keypair.fromSecretKey(
@@ -24,7 +26,7 @@ export async function initGemBank(
     wallet
 ) {
     const walletToUse = wallet ?? createFakeWallet();
-    const idl = await (await fetch('gem_bank.json')).json();
+    const idl = gem_bank;
     return new GemBank(conn, walletToUse, idl);
 }
 

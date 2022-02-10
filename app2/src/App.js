@@ -65,9 +65,9 @@ function App() {
     const connection = new Connection(network, opts.preflightCommitment);
 
     const farmStarted = await fetchFarn(connection, wallet)
-    // console.log("started: ", farmStarted)
+    console.log("started: ", farmStarted)
     const farmerStarted = await fetchFarmer(connection, wallet)
-    // console.log("started: ", farmerStarted)
+    console.log("started: ", farmerStarted)
     setFarmerState(farmerStarted.farmerState)
   }
 

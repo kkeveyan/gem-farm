@@ -1,4 +1,5 @@
 import { initGemFarm } from "./gemfarm";
+import { initGemBank } from './gemBank';
 import { BN } from '@project-serum/anchor';
 import { Connection, PublicKey } from '@solana/web3.js';
 import env from "react-dotenv";
@@ -70,11 +71,72 @@ export async function getFarmerDeets(connection, wallet) {
 export async function stakerMover(nft, connection, wallet) {
     let nftArray = []
     nftArray.push(nft)
-    console.log("selectedNfts: ", nft.mint)
+    console.log("selectedNfts: ", nft.mint.toBase58())
+    let gb = await initGemBank(connection, wallet)
+    console.log("gb: ", gb)
     let gf = await initGemFarm(connection, wallet)
-    const gemsResult = await addGems(nftArray, gf)
+    // const gemsResult = await addGems(nftArray, gf)
+    // console.log("gemsResult: ", gemsResult)
+    const farmAcc = await fetchFarn(connection, wallet)
+    console.log("farmAcc: ", farmAcc)
+    const bank = farmAcc.bank
+    console.log("bank: ", bank.toBase58())
+    const farmerAcc = await fetchFarmer(connection, wallet)
+    const vault = farmerAcc.farmerAcc.vault
+    console.log("vault: ", vault)
+    const moveResult = await depositNftsOnChain(nftArray, gb, bank, vault)
     const stakeResult = await beginStaking(gf)
     return stakeResult
+}
+
+const depositGem = async (mint, creator, source, gb, bank, vault) => {
+    const { txSig } = await gb.depositGemWallet(
+        bank,
+        vault,
+        new BN(1),
+        mint,
+        source,
+        creator
+    );
+    console.log('deposit done', txSig);
+};
+const withdrawGem = async (mint, bank, vault, gb) => {
+    const { txSig } = await gb.withdrawGemWallet(
+        bank,
+        vault,
+        new BN(1),
+        mint
+    );
+    console.log('withdrawal done', txSig);
+};
+
+export async function depositNftsOnChain(nfts, gb, bank, vault) {
+    for (const nft of nfts) {
+        console.log(nft);
+        const creator = new PublicKey(
+            //todo currently simply taking the 1st creator
+            nft.onchainMetadata.data.creators[0].address
+        );
+        console.log('creator is', creator.toBase58());
+        const depositResult = await depositGem(nft.mint, creator, nft.pubkey, gb, bank, vault);
+        return depositResult
+    }
+
+
+};
+
+export async function withdrawNftsOnChain(nfts, connection, wallet) {
+    let gb = await initGemBank(connection, wallet)
+    let gf = await initGemFarm(connection, wallet)
+    // const gemsResult = await addGems(nftArray, gf)
+    // console.log("gemsResult: ", gemsResult)
+    const farmAcc = gf.fetchFarn(connection, wallet)
+    const bank = farmAcc.bank
+    const farmerAcc = gf.fetchFarmer(connection, wallet)
+    const vault = farmerAcc.vault
+    for (const nft of nfts) {
+        await withdrawGem(nft.mint, bank, vault, gb);
+    }
 }
 
 const addSingleGem = async (
