@@ -1,5 +1,10 @@
 # Gem Farm 💎
+# KJ wuz here
+# KJ wuz here in branch feature1 
+
 _by Gemworks_
+
+
 
 Gem Farm is a collection of on-chain Solana programs for NFT ("gem" 💎) staking.
 
